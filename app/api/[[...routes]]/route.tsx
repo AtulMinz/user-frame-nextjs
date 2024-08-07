@@ -1,0 +1,215 @@
+/** @jsxImportSource frog/jsx */
+
+import { Button, Frog, TextInput } from "frog";
+import { devtools } from "frog/dev";
+import { handle } from "frog/next";
+import { serveStatic } from "frog/serve-static";
+import { containerStyle, childStyle } from "@/app/components/styles";
+
+type State = {
+  name: string;
+  email: string;
+};
+
+export const app = new Frog<{ State: State }>({
+  initialState: {
+    name: "",
+    email: "",
+  },
+  title: "Frog Frame",
+  assetsPath: "/",
+  basePath: "/api",
+});
+
+//@ts-ignore
+const isValidEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// Collect name
+app.frame("/", (c) => {
+  return c.res({
+    image: (
+      <div
+        style={{
+          alignItems: "center",
+          background: "linear-gradient(to right, #432889, #17101F)",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          justifyContent: "center",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ color: "white", fontSize: 60, padding: "0 120px" }}>
+          Enter Name
+        </div>
+      </div>
+    ),
+    intents: [
+      <TextInput placeholder="Enter Name" />,
+      <Button value="next" action="/email">
+        Next
+      </Button>,
+    ],
+  });
+});
+
+// Collect email
+app.frame("/email", (c) => {
+  const { buttonValue, deriveState, inputText } = c;
+  const state = deriveState((previousState) => {
+    if (buttonValue === "next") {
+      previousState.name = inputText!;
+    }
+  });
+  return c.res({
+    image: (
+      <div
+        style={{
+          alignItems: "center",
+          background: "linear-gradient(to right, #432889, #17101F)",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          justifyContent: "center",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ color: "white", fontSize: 60, padding: "0 120px" }}>
+          Enter Email
+        </div>
+      </div>
+    ),
+    intents: [
+      <TextInput placeholder="Enter Email" />,
+      <Button value="next-email" action="/validate-email">
+        Next
+      </Button>,
+    ],
+  });
+});
+
+// Validate email
+app.frame("/validate-email", (c) => {
+  const { buttonValue, deriveState, inputText } = c;
+  const state = deriveState((previousState) => {
+    if (buttonValue === "next-email") {
+      previousState.email = inputText!;
+    }
+  });
+
+  if (!isValidEmail(inputText)) {
+    return c.res({
+      image: (
+        <div
+          style={{
+            alignItems: "center",
+            background: "linear-gradient(to right, #432889, #17101F)",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ color: "white", fontSize: 40, padding: "0 120px" }}>
+            Invalid email. Please enter a valid email address.
+          </div>
+        </div>
+      ),
+      intents: [
+        <Button value="retry" action="/email">
+          Retry
+        </Button>,
+      ],
+    });
+  }
+
+  return c.res({
+    image: (
+      <div
+        style={{
+          alignItems: "center",
+          background: "linear-gradient(to right, #432889, #17101F)",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          justifyContent: "center",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ color: "white", fontSize: 60, padding: "0 120px" }}>
+          Email Validated
+        </div>
+      </div>
+    ),
+    intents: [
+      <Button value="next" action="/display-info">
+        Next
+      </Button>,
+    ],
+  });
+});
+
+// User Info
+app.frame("/display-info", (c) => {
+  const { deriveState } = c;
+  const state = deriveState();
+
+  console.log(state.name);
+  console.log(state.email);
+
+  return c.res({
+    image: (
+      <div
+        style={{
+          alignItems: "center",
+          background: "linear-gradient(to right, #432889, #17101F)",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          justifyContent: "center",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            color: "white",
+            fontSize: 60,
+            padding: "0 120px",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            Name: {state.name}
+            <br />
+            Email: {state.email}
+          </div>
+        </div>
+      </div>
+    ),
+    intents: [<Button.Reset>Start Over</Button.Reset>],
+  });
+});
+
+devtools(app, { serveStatic });
+
+export const GET = handle(app);
+export const POST = handle(app);
+
+// NOTE: That if you are using the devtools and enable Edge Runtime, you will need to copy the devtools
+// static assets to the public folder. You can do this by adding a script to your package.json:
+// ```json
+// {
+//   scripts: {
+//     "copy-static": "cp -r ./node_modules/frog/_lib/ui/.frog ./public/.frog"
+//   }
+// }
+// ```
+// Next, you'll want to set up the devtools to use the correct assets path:
+// ```ts
+// devtools(app, { assetsPath: '/.frog' })
+// ```

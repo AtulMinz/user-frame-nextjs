@@ -5,6 +5,7 @@ import { devtools } from "frog/dev";
 import { handle } from "frog/next";
 import { serveStatic } from "frog/serve-static";
 import { containerStyle, childStyle } from "@/app/components/styles";
+import { pinata } from "frog/hubs";
 
 type State = {
   name: string;
@@ -19,6 +20,7 @@ export const app = new Frog<{ State: State }>({
   title: "Frog Frame",
   assetsPath: "/",
   basePath: "/api",
+  hub: pinata(),
 });
 
 //@ts-ignore
